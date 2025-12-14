@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Günlük Takip Programı</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#4CAF50">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.6rem;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #fff;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    input[type="text"], input[type="date"] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+    button {
+      padding: 8px 10px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    /* GRID */
+    .task-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .task-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 100px;
+      background: #fafafa;
+    }
+    .task-text {
+      flex: 1;
+      font-size: 0.95rem;
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+    .done {
+      text-decoration: line-through;
+      color: gray;
+    }
+    .task-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .day-list {
+      margin-top: 20px;
+    }
+    .day-list button {
+      width: 100%;
+      text-align: left;
+      background: #e9ecef;
+      border: none;
+      margin-bottom: 6px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    /* MOBİL */
+    @media (max-width: 700px) {
+      .task-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>📋 Günlük Takip Programı</h1>
+  <div class="container">
+
+    <label><strong>Tarih:</strong></label>
+    <input type="date" id="dateInput" />
+
+    <label><strong>Yeni İş:</strong></label>
+    <input type="text" id="taskInput" placeholder="Yapılacak işi yaz..." />
+    <button onclick="addTask()">➕ İş Ekle</button>
+
+    <div id="taskGrid" class="task-grid"></div>
+
+    <hr />
+    <h3>💾 Yedekleme</h3>
+    <button onclick="backupData()">📤 Yedek Al</button>
+    <input type="file" id="restoreInput" accept="application/json" />
+    <button onclick="restoreData()">📥 Geri Yükle</button>
+
+    <hr />
+    <h3>📅 Kayıtlı Günler</h3>
+    <div class="day-list" id="dayList"></div>
+  </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  let currentDate = null;
+
+  const taskGrid = document.getElementById('taskGrid');
+  const dateInput = document.getElementById('dateInput');
+
+  function getDays() {
+    return JSON.parse(localStorage.getItem('days')) || {};
+  }
+
+  function saveDays(days) {
+    localStorage.setItem('days', JSON.stringify(days));
+  }
+
+  function loadDays() {
+    const days = getDays();
+    const dayList = document.getElementById('dayList');
+    dayList.innerHTML = '';
+    Object.keys(days).forEach(date => {
+      const btn = document.createElement('button');
+      btn.textContent = date;
+      btn.onclick = () => loadDay(date);
+      dayList.appendChild(btn);
+    });
+  }
+
+  function loadDay(date) {
+    currentDate = date;
+    dateInput.value = date;
+    const days = getDays();
+    const tasks = days[date] || [];
+
+    taskGrid.innerHTML = '';
+
+    for (let i = 0; i < 25; i++) {
+      if (tasks[i]) {
+        taskGrid.appendChild(createTaskCard(tasks[i].text, tasks[i].done, i));
+      } else {
+        taskGrid.appendChild(createEmptyCard(i));
+      }
+    }
+  }
+
+  window.addTask = function () {
+    if (!currentDate) {
+      alert('Önce tarih seçmelisin');
+      return;
+    }
+    const input = document.getElementById('taskInput');
+    if (!input.value.trim()) return;
+    const days = getDays();
+    days[currentDate].push({ text: input.value.trim(), done: false });
+    saveDays(days);
+    input.value = '';
+    loadDay(currentDate);
+    loadDays();
+  };
+
+  function toggleTask(index) {
+    const days = getDays();
+    days[currentDate][index].done = !days[currentDate][index].done;
+    saveDays(days);
+    loadDay(currentDate);
+  }
+
+  function deleteTask(index) {
+    if (!confirm('Bu işi silmek istiyor musun?')) return;
+    const days = getDays();
+    days[currentDate].splice(index, 1);
+    saveDays(days);
+    loadDay(currentDate);
+  }
+
+  function editTask(index, textDiv) {
+    const days = getDays();
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = days[currentDate][index].text;
+    textDiv.replaceWith(input);
+    input.focus();
+
+    function save() {
+      if (input.value.trim()) {
+        days[currentDate][index].text = input.value.trim();
+        saveDays(days);
+      }
+      loadDay(currentDate);
+    }
+
+    input.onblur = save;
+    input.onkeydown = e => {
+      if (e.key === 'Enter') save();
+      if (e.key === 'Escape') loadDay(currentDate);
+    };
+  }
+
+  function createTaskCard(text, done, index) {
+    const card = document.createElement('div');
+    card.className = 'task-card';
+
+    const textDiv = document.createElement('div');
+    textDiv.className = 'task-text';
+    textDiv.textContent = text;
+    if (done) textDiv.classList.add('done');
+    textDiv.ondblclick = () => editTask(index, textDiv);
+
+    const controls = document.createElement('div');
+    controls.className = 'task-controls';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = done;
+    checkbox.onchange = () => toggleTask(index);
+
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '🗑️';
+    delBtn.onclick = () => deleteTask(index);
+
+    controls.append(checkbox, delBtn);
+    card.append(textDiv, controls);
+    return card;
+  }
+
+  function createEmptyCard(index) {
+    const card = document.createElement('div');
+    card.className = 'task-card';
+    card.style.opacity = '0.4';
+    card.textContent = 'Boş';
+    card.ondblclick = () => {
+      const input = document.getElementById('taskInput');
+      input.focus();
+    };
+    return card;
+  }
+
+  dateInput.addEventListener('change', e => {
+    const days = getDays();
+    currentDate = e.target.value;
+    if (!days[currentDate]) {
+      days[currentDate] = [];
+      saveDays(days);
+    }
+    loadDay(currentDate);
+    loadDays();
+  });
+
+  window.backupData = function () {
+    const data = localStorage.getItem('days');
+    if (!data) return alert('Yedeklenecek veri yok');
+    const blob = new Blob([data], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'gunluk_takip_yedek.json';
+    a.click();
+  };
+
+  window.restoreData = function () {
+    const input = document.getElementById('restoreInput');
+    if (!input.files.length) return alert('Dosya seç');
+    if (!confirm('Mevcut veriler silinecek. Emin misin?')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      localStorage.setItem('days', e.target.result);
+      currentDate = null;
+      taskGrid.innerHTML = '';
+      loadDays();
+    };
+    reader.readAsText(input.files[0]);
+  };
+
+  loadDays();
+
+  // SERVICE WORKER KAYDI (PWA)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js');
+  }
+});
+</script>
+</body>
+</html>
