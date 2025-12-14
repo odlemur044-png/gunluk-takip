@@ -1,7 +1,7 @@
 {
   "name": "Günlük Takip Programı",
   "short_name": "Takip",
-  "start_url": "takip.html",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4CAF50",
@@ -18,3 +18,4 @@
     }
   ]
 }
+
