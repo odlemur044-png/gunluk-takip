@@ -2,7 +2,7 @@ const CACHE_NAME = 'gunluk-takip-v1';
 const FILES_TO_CACHE = [
   './',
   'index.html',
-  'manifest.json'
+  'manifest1.json'
 ];
 
 self.addEventListener('install', e => {
@@ -16,4 +16,5 @@ self.addEventListener('fetch', e => {
     caches.match(e.request).then(response => response || fetch(e.request))
   );
 });
+
 
