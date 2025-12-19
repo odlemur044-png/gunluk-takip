@@ -402,5 +402,14 @@ restoreBtn.onclick=()=>{
 
 });
 </script>
+  <script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register(
+    "/gunluk-takip/service-worker.js",
+    { scope: "/gunluk-takip/" }
+  );
+}
+</script>
+
 </body>
 </html>
