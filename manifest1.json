@@ -2,7 +2,7 @@
   "name": "Günlük Takip",
   "short_name": "Takip",
   "description": "Günlük iş ve görev takip uygulaması",
-  "start_url": "/gunluk-takip/",
+  "start_url": "index.html",
   "scope": "/gunluk-takip/",
   "display": "standalone",
   "display_override": ["standalone", "window-controls-overlay"],
