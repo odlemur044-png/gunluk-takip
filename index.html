@@ -392,6 +392,22 @@ restoreBtn.onclick=()=>{
   const m = String(now.getMonth()+1).padStart(2,'0');
   monthInput.value = `${y}-${m}`;
   monthInput.dispatchEvent(new Event('change'));
+ 
+  // Bugünün günü otomatik seçilsin
+setTimeout(() => {
+  const today = new Date();
+  const iso =
+    today.getFullYear() + "-" +
+    String(today.getMonth() + 1).padStart(2, "0") + "-" +
+    String(today.getDate()).padStart(2, "0");
+
+  const btn = document.querySelector(
+    `#monthDays button[data-date="${iso}"]`
+  );
+
+  if (btn) btn.click();
+}, 50);
+
 
 });
 </script>
