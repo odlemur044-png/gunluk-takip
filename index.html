@@ -165,10 +165,11 @@ button:active {
   <div id="goalBox" class="goal-box">
   <label>
     🎯 Hedef:
-    <input type="number" id="goalInput" min="1" style="width:80px;">
-    gün
-  </label>
-  <div>⏳ Kalan: <span id="goalRemaining">0</span> gün</div>
+<input type="number" id="goalInput" placeholder="Örn: 1100" style="width:80px;">
+<button id="saveGoalBtn">Kaydet</button>
+<span style="margin-left:10px;">
+  ⏳ Kalan: <b><span id="goalRemaining">0</span></b> gün
+</span>
 </div>
   <label><strong>Ay / Yıl Seç:</strong></label>
   <input type="month" id="monthInput">
@@ -221,10 +222,16 @@ document.addEventListener('DOMContentLoaded',()=>{
 goalInput.value = getGoal();
 
 // Kullanıcı sayı yazınca kaydet
-goalInput.addEventListener("change", () => {
-  if (goalInput.value > 0) {
-    setGoal(goalInput.value);
-    updateGoalStatus();
+  const saveGoalBtn = document.getElementById("saveGoalBtn");
+saveGoalBtn.onclick = () => {
+  if (!goalInput.value || goalInput.value <= 0) {
+    alert("Lütfen geçerli bir hedef gir");
+    return;
+  }
+  setGoal(goalInput.value);
+  updateGoalStatus();
+};
+
   }
 });
 let currentDate = null;
