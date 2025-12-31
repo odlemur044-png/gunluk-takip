@@ -165,11 +165,14 @@ button:active {
   <div id="goalBox" class="goal-box">
   <label>
     🎯 Hedef:
-<input type="number" id="goalInput" placeholder="Örn: 1100" style="width:80px;">
-<button id="saveGoalBtn">Kaydet</button>
-<span style="margin-left:10px;">
-  ⏳ Kalan: <b><span id="goalRemaining">0</span></b> gün
-</span>
+    <input type="number" id="goalInput" placeholder="Örn: 1100" style="width:80px;">
+  </label>
+
+  <button id="saveGoalBtn">Kaydet</button>
+
+  <span style="margin-left:10px;">
+    ⏳ Kalan: <b><span id="goalRemaining">0</span></b> gün
+  </span>
 </div>
   <label><strong>Ay / Yıl Seç:</strong></label>
   <input type="month" id="monthInput">
@@ -215,15 +218,13 @@ function setGoal(value) {
   localStorage.setItem("goal", value);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', () => {
 
   const goalInput = document.getElementById("goalInput");
   const saveGoalBtn = document.getElementById("saveGoalBtn");
 
-  // Daha önce kaydedilmiş hedef varsa inputa yaz
   goalInput.value = getGoal();
 
-  // Kaydet butonuna basınca
   saveGoalBtn.onclick = () => {
     if (!goalInput.value || goalInput.value <= 0) {
       alert("Lütfen geçerli bir hedef gir");
