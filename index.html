@@ -217,12 +217,9 @@ function setGoal(value) {
 
 document.addEventListener('DOMContentLoaded',()=>{
   const goalInput = document.getElementById("goalInput");
-
-// Önceden kaydedilmiş hedef varsa yaz
-goalInput.value = getGoal();
-
-// Kullanıcı sayı yazınca kaydet
   const saveGoalBtn = document.getElementById("saveGoalBtn");
+  
+goalInput.value = getGoal();
 saveGoalBtn.onclick = () => {
   if (!goalInput.value || goalInput.value <= 0) {
     alert("Lütfen geçerli bir hedef gir");
