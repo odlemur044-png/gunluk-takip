@@ -215,22 +215,26 @@ function setGoal(value) {
   localStorage.setItem("goal", value);
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded', () => {
+
   const goalInput = document.getElementById("goalInput");
   const saveGoalBtn = document.getElementById("saveGoalBtn");
-  
-goalInput.value = getGoal();
-saveGoalBtn.onclick = () => {
-  if (!goalInput.value || goalInput.value <= 0) {
-    alert("Lütfen geçerli bir hedef gir");
-    return;
-  }
-  setGoal(goalInput.value);
-  updateGoalStatus();
-};
 
-  }
+  // Daha önce kaydedilmiş hedef varsa inputa yaz
+  goalInput.value = getGoal();
+
+  // Kaydet butonuna basınca
+  saveGoalBtn.onclick = () => {
+    if (!goalInput.value || goalInput.value <= 0) {
+      alert("Lütfen geçerli bir hedef gir");
+      return;
+    }
+    setGoal(goalInput.value);
+    updateGoalStatus();
+  };
+
 });
+
 let currentDate = null;
 let selectedDays = [];
 let multiSelect = false;
