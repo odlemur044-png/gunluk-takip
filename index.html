@@ -458,6 +458,50 @@ if ("serviceWorker" in navigator) {
     { scope: "/gunluk-takip/" }
   );
 }
+    // 📱 Mobilde ay değişimi için swipe
+let touchStartX = 0;
+let touchEndX = 0;
+
+const swipeArea = document.getElementById("monthDays");
+
+swipeArea.addEventListener("touchstart", e => {
+  touchStartX = e.changedTouches[0].screenX;
+});
+
+swipeArea.addEventListener("touchend", e => {
+  touchEndX = e.changedTouches[0].screenX;
+  handleSwipe();
+});
+
+function handleSwipe() {
+  const diff = touchEndX - touchStartX;
+
+  // küçük dokunuşları yok say
+  if (Math.abs(diff) < 50) return;
+
+  const [year, month] = monthInput.value.split("-").map(Number);
+  let newYear = year;
+  let newMonth = month;
+
+  if (diff < 0) {
+    // 👉 sola kaydır = sonraki ay
+    newMonth++;
+    if (newMonth > 12) {
+      newMonth = 1;
+      newYear++;
+    }
+  } else {
+    // 👈 sağa kaydır = önceki ay
+    newMonth--;
+    if (newMonth < 1) {
+      newMonth = 12;
+      newYear--;
+    }
+  }
+
+  monthInput.value = `${newYear}-${String(newMonth).padStart(2, "0")}`;
+  monthInput.dispatchEvent(new Event("change"));
+}
 </script>
 
 </body>
