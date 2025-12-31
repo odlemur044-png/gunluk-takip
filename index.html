@@ -210,7 +210,7 @@ button:active {
 </div>
 
 <script>
-  function getGoal() {
+function getGoal() {
   return Number(localStorage.getItem("goal")) || 0;
 }
 
@@ -218,7 +218,21 @@ function setGoal(value) {
   localStorage.setItem("goal", value);
 }
 
-  document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
+
+  let currentDate = null;
+  let selectedDays = [];
+  let multiSelect = false;
+
+  const monthInput = document.getElementById('monthInput');
+  const monthDays  = document.getElementById('monthDays');
+  const taskGrid   = document.getElementById('taskGrid');
+  const taskInput  = document.getElementById('taskInput');
+  const addBtn     = document.getElementById('addBtn');
+  const backupBtn  = document.getElementById('backupBtn');
+  const restoreBtn = document.getElementById('restoreBtn');
+  const restoreInput = document.getElementById('restoreInput');
+  const clearSelectedBtn = document.getElementById('clearSelected');
 
   const goalInput = document.getElementById("goalInput");
   const saveGoalBtn = document.getElementById("saveGoalBtn");
@@ -234,332 +248,212 @@ function setGoal(value) {
     updateGoalStatus();
   };
 
-});
+  function getDays(){ return JSON.parse(localStorage.getItem('days')) || {}; }
+  function saveDays(d){ localStorage.setItem('days', JSON.stringify(d)); }
 
-let currentDate = null;
-let selectedDays = [];
-let multiSelect = false;
+  monthInput.addEventListener('change', () => {
+    monthDays.innerHTML = '';
+    selectedDays = [];
+    currentDate = null;
 
-const monthInput = document.getElementById('monthInput');
-const monthDays  = document.getElementById('monthDays');
-const taskGrid   = document.getElementById('taskGrid');
-const taskInput  = document.getElementById('taskInput');
-const dayList    = document.getElementById('dayList');
-const addBtn     = document.getElementById('addBtn');
-const backupBtn  = document.getElementById('backupBtn');
-const restoreBtn = document.getElementById('restoreBtn');
-const restoreInput = document.getElementById('restoreInput');
-const clearSelectedBtn = document.getElementById('clearSelected');
+    if(!monthInput.value) return;
+    const [y,m] = monthInput.value.split('-').map(Number);
+    const count = new Date(y,m,0).getDate();
 
-function getDays(){ return JSON.parse(localStorage.getItem('days')) || {}; }
-function saveDays(d){ localStorage.setItem('days', JSON.stringify(d)); }
+    let firstDay = new Date(y, m - 1, 1).getDay();
+    firstDay = (firstDay + 6) % 7;
 
-monthInput.addEventListener('change', () => {
-  monthDays.innerHTML = '';
-  selectedDays = [];
-  currentDate = null;
-
-  if(!monthInput.value) return;
-  const [y,m] = monthInput.value.split('-').map(Number);
-  const count = new Date(y,m,0).getDate();
-// Ayın ilk gününün haftanın hangi günü olduğunu bul (Pzt = 0)
-let firstDay = new Date(y, m - 1, 1).getDay();
-firstDay = (firstDay + 6) % 7; // Pazartesi başlangıç
-  // Ayın başı için boş kutular
-for (let i = 0; i < firstDay; i++) {
-  const empty = document.createElement("div");
-  monthDays.appendChild(empty);
-}
-  for(let d=1; d<=count; d++){
-    const iso = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const btn = document.createElement('button');
-    btn.type='button';
-    btn.textContent=d;
-    btn.dataset.date=iso;
-
-    const dot=document.createElement('div');
-    dot.className='day-dot';
-
-    const daysData=getDays();
-    if(daysData[iso] && daysData[iso].length>0){
-      const allDone = daysData[iso].every(t=>t.done);
-      dot.classList.add(allDone?'dot-done':'dot-has');
+    for (let i = 0; i < firstDay; i++) {
+      const empty = document.createElement("div");
+      monthDays.appendChild(empty);
     }
 
-    // TIKLAMA = seç
-    btn.onclick = () => {
-      if(btn._longPressed){ btn._longPressed=false; return; }
-      const days=getDays();
-      if(!days[iso]) days[iso]=[];
+    for(let d=1; d<=count; d++){
+      const iso = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const btn = document.createElement('button');
+      btn.type='button';
+      btn.textContent=d;
+      btn.dataset.date=iso;
 
-      if(!multiSelect){
-        [...monthDays.children].forEach(b=>b.classList.remove('active'));
-        selectedDays=[iso];
-        btn.classList.add('active');
-      }else{
-        if(selectedDays.includes(iso)){
-          selectedDays=selectedDays.filter(x=>x!==iso);
-          btn.classList.remove('active');
-        }else{
-          selectedDays.push(iso);
-          btn.classList.add('active');
-        }
+      const dot=document.createElement('div');
+      dot.className='day-dot';
+
+      const daysData=getDays();
+      if(daysData[iso] && daysData[iso].length>0){
+        const allDone = daysData[iso].every(t=>t.done);
+        dot.classList.add(allDone?'dot-done':'dot-has');
       }
-      currentDate=iso;
-      saveDays(days);
-      loadDay();
-      btn.classList.toggle("completed-day");
-updateGoalStatus();
 
-    };
-
-    // BASILI TUTMA = günü temizle
-    let holdTimer=null;
-    const holdStart=()=>{
-      btn._longPressed=false;
-      btn.classList.add('delete-hold');
-      holdTimer=setTimeout(()=>{
-        btn._longPressed=true;
-        btn.classList.remove('delete-hold');
+      btn.onclick = () => {
+        if(btn._longPressed){ btn._longPressed=false; return; }
         const days=getDays();
-        if(days[iso]){
-          if(confirm(iso+' günündeki tüm görevler silinsin mi?')){
-            delete days[iso];
-            saveDays(days);
-            if(currentDate===iso) currentDate=null;
-            loadDay();
-            
-            renderMonthDots();
+        if(!days[iso]) days[iso]=[];
+
+        if(!multiSelect){
+          [...monthDays.children].forEach(b=>b.classList.remove('active'));
+          selectedDays=[iso];
+          btn.classList.add('active');
+        }else{
+          if(selectedDays.includes(iso)){
+            selectedDays=selectedDays.filter(x=>x!==iso);
+            btn.classList.remove('active');
+          }else{
+            selectedDays.push(iso);
+            btn.classList.add('active');
           }
         }
-      },700);
-    };
-    const holdCancel=()=>{
-      if(holdTimer) clearTimeout(holdTimer);
-      btn.classList.remove('delete-hold');
-    };
-
-    btn.addEventListener('mousedown',holdStart);
-    btn.addEventListener('mouseup',holdCancel);
-    btn.addEventListener('mouseleave',holdCancel);
-    btn.addEventListener('touchstart',holdStart);
-    btn.addEventListener('touchend',holdCancel);
-    btn.addEventListener('touchcancel',holdCancel);
-
-    btn.appendChild(dot);
-    monthDays.appendChild(btn);
-  }
-});
-
-// Çoklu seçim aç/kapat
-document.getElementById('toggleMulti').onclick=()=>{
-  multiSelect=!multiSelect;
-  document.getElementById('toggleMulti').textContent = multiSelect ? '✔ Çoklu Seçim Açık' : '➕ Birden Fazla Gün Seç';
-  if(!multiSelect && selectedDays.length>1) selectedDays=[selectedDays[0]];
-};
-
-// Seçilen günleri toplu temizle
-clearSelectedBtn.onclick = () => {
-  if(selectedDays.length===0) return alert('Temizlemek için gün seç');
-  if(!confirm(selectedDays.join(', ')+' günlerindeki TÜM görevler silinsin mi?')) return;
-  const days = getDays();
-  selectedDays.forEach(d=>{ delete days[d]; });
-  saveDays(days);
-  selectedDays = [];
-  currentDate = null;
-  loadDay();
-  renderMonthDots();
-  [...monthDays.children].forEach(b=>b.classList.remove('active'));
-};
-
-function loadDay(){
-  taskGrid.innerHTML='';
-  if(!currentDate) return;
-  const days=getDays();
-  const tasks=days[currentDate]||[];
-
-  const maxSlots = Math.max( tasks.length + 2, 5 );
-  for(let i=0;i<maxSlots;i++){
-    const card=document.createElement('div');
-    card.className='task-card';
-
-    if(tasks[i]){
-      card.textContent = tasks[i].text;
-      // yazı uzunluğuna göre padding / görünüm ayarı
-      const len = tasks[i].text.length;
-      if(len < 20) card.style.padding = '6px';
-      else if(len < 60) card.style.padding = '8px';
-      else card.style.padding = '10px';
-      if(tasks[i].done) card.classList.add('done','completed');
-
-      let timer=null, long=false;
-      card.onclick=()=>{
-        card.oncontextmenu = e => e.preventDefault();
-        if(long){ long=false; return; }
-        tasks[i].done=!tasks[i].done;
+        currentDate=iso;
         saveDays(days);
         loadDay();
-        renderMonthDots();
+        updateGoalStatus();
       };
 
-      const start=()=>{
-        long=false;
-        card.classList.add('delete-hold');
-        timer=setTimeout(()=>{
-          long=true;
-          card.classList.remove('delete-hold');
-          if(confirm('Bu görevi silmek istiyor musun?')){
-            tasks.splice(i,1);
-            saveDays(days);
-            loadDay();
-            
-            renderMonthDots();
+      let holdTimer=null;
+      const holdStart=()=>{
+        btn._longPressed=false;
+        btn.classList.add('delete-hold');
+        holdTimer=setTimeout(()=>{
+          btn._longPressed=true;
+          btn.classList.remove('delete-hold');
+          const days=getDays();
+          if(days[iso]){
+            if(confirm(iso+' günündeki tüm görevler silinsin mi?')){
+              delete days[iso];
+              saveDays(days);
+              if(currentDate===iso) currentDate=null;
+              loadDay();
+              renderMonthDots();
+              updateGoalStatus();
+            }
           }
         },700);
       };
-      const cancel=()=>{ if(timer) clearTimeout(timer); card.classList.remove('delete-hold'); };
+      const holdCancel=()=>{
+        if(holdTimer) clearTimeout(holdTimer);
+        btn.classList.remove('delete-hold');
+      };
 
-      card.addEventListener('mousedown',start);
-      card.addEventListener('mouseup',cancel);
-      card.addEventListener('mouseleave',cancel);
-      card.addEventListener('touchstart',start);
-      card.addEventListener('touchend',cancel);
-      card.addEventListener('touchcancel',cancel);
+      btn.addEventListener('mousedown',holdStart);
+      btn.addEventListener('mouseup',holdCancel);
+      btn.addEventListener('mouseleave',holdCancel);
+      btn.addEventListener('touchstart',holdStart);
+      btn.addEventListener('touchend',holdCancel);
+      btn.addEventListener('touchcancel',holdCancel);
 
-    }else{
-      card.style.opacity='0.3';
-      card.textContent='Boş';
-    }
-    taskGrid.appendChild(card);
-  }
-}
-
-function renderMonthDots(){
-  [...monthDays.children].forEach(btn=>{
-    const iso=btn.dataset.date;
-    const dot=btn.querySelector('.day-dot');
-    dot.className='day-dot';
-    const days=getDays();
-    if(days[iso] && days[iso].length>0){
-      dot.classList.add(days[iso].every(t=>t.done)?'dot-done':'dot-has');
+      btn.appendChild(dot);
+      monthDays.appendChild(btn);
     }
   });
-}
 
-addBtn.onclick=()=>{
-  if(selectedDays.length===0) return alert('Önce gün seç');
-  if(!taskInput.value.trim()) return;
-  const days=getDays();
-  selectedDays.forEach(d=>{ if(!days[d]) days[d]=[]; days[d].push({text:taskInput.value,done:false}); });
-  saveDays(days);
-  taskInput.value='';
-  loadDay();
-  
-  renderMonthDots();
-};
+  document.getElementById('toggleMulti').onclick=()=>{
+    multiSelect=!multiSelect;
+    document.getElementById('toggleMulti').textContent =
+      multiSelect ? '✔ Çoklu Seçim Açık' : '➕ Birden Fazla Gün Seç';
+    if(!multiSelect && selectedDays.length>1) selectedDays=[selectedDays[0]];
+  };
 
-function loadDaysList(){
-  // Kayıtlı günler sekmesi kaldırıldı – veri ve diğer işlevler korunuyor
-}
+  clearSelectedBtn.onclick = () => {
+    if(selectedDays.length===0) return alert('Temizlemek için gün seç');
+    if(!confirm(selectedDays.join(', ')+' günlerindeki TÜM görevler silinsin mi?')) return;
+    const days = getDays();
+    selectedDays.forEach(d=>{ delete days[d]; });
+    saveDays(days);
+    selectedDays = [];
+    currentDate = null;
+    loadDay();
+    renderMonthDots();
+    updateGoalStatus();
+    [...monthDays.children].forEach(b=>b.classList.remove('active'));
+  };
 
-backupBtn.onclick=()=>{
-  const blob=new Blob([JSON.stringify({days:getDays()},null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='gunluk-takip-yedek.json'; a.click();
-};
+  function loadDay(){
+    taskGrid.innerHTML='';
+    if(!currentDate) return;
+    const days=getDays();
+    const tasks=days[currentDate]||[];
 
-restoreBtn.onclick=()=>{
-  const f=restoreInput.files[0]; if(!f) return alert('Dosya seç');
-  const r=new FileReader();
-  r.onload=e=>{ try{ const d=JSON.parse(e.target.result); localStorage.setItem('days',JSON.stringify(d.days));  loadDay(); renderMonthDots(); alert('Yedek yüklendi'); }catch{ alert('Geçersiz dosya'); } };
-  r.readAsText(f);
-};
+    const maxSlots = Math.max( tasks.length + 2, 5 );
+    for(let i=0;i<maxSlots;i++){
+      const card=document.createElement('div');
+      card.className='task-card';
 
+      if(tasks[i]){
+        card.textContent = tasks[i].text;
+        if(tasks[i].done) card.classList.add('done','completed');
 
-  // İlk açılışta mevcut ay/yıl otomatik seçilsin
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth()+1).padStart(2,'0');
-  monthInput.value = `${y}-${m}`;
-  monthInput.dispatchEvent(new Event('change'));
- 
-  // Bugünün günü otomatik seçilsin
-setTimeout(() => {
-  const today = new Date();
-  const iso =
-    today.getFullYear() + "-" +
-    String(today.getMonth() + 1).padStart(2, "0") + "-" +
-    String(today.getDate()).padStart(2, "0");
-
-  const btn = document.querySelector(
-    `#monthDays button[data-date="${iso}"]`
-  );
-
-  if (btn) btn.click();
-}, 50);
-
-
-});
-</script>
-  <script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register(
-    "/gunluk-takip/service-worker.js",
-    { scope: "/gunluk-takip/" }
-  );
-}
-    // 📱 Mobilde ay değişimi için swipe
-let touchStartX = 0;
-let touchEndX = 0;
-
-const swipeArea = document.getElementById("monthDays");
-
-swipeArea.addEventListener("touchstart", e => {
-  touchStartX = e.changedTouches[0].screenX;
-});
-
-swipeArea.addEventListener("touchend", e => {
-  touchEndX = e.changedTouches[0].screenX;
-  handleSwipe();
-});
-
-function handleSwipe() {
-  const diff = touchEndX - touchStartX;
-
-  // küçük dokunuşları yok say
-  if (Math.abs(diff) < 50) return;
-
-  const [year, month] = monthInput.value.split("-").map(Number);
-  let newYear = year;
-  let newMonth = month;
-
-  if (diff < 0) {
-    // 👉 sola kaydır = sonraki ay
-    newMonth++;
-    if (newMonth > 12) {
-      newMonth = 1;
-      newYear++;
-    }
-  } else {
-    // 👈 sağa kaydır = önceki ay
-    newMonth--;
-    if (newMonth < 1) {
-      newMonth = 12;
-      newYear--;
+        card.onclick=()=>{
+          tasks[i].done=!tasks[i].done;
+          saveDays(days);
+          loadDay();
+          renderMonthDots();
+          updateGoalStatus();
+        };
+      }else{
+        card.style.opacity='0.3';
+        card.textContent='Boş';
+      }
+      taskGrid.appendChild(card);
     }
   }
-  monthInput.value = `${newYear}-${String(newMonth).padStart(2, "0")}`;
-  monthInput.dispatchEvent(new Event("change"));
- 
+
+  function renderMonthDots(){
+    [...monthDays.children].forEach(btn=>{
+      const iso=btn.dataset.date;
+      const dot=btn.querySelector('.day-dot');
+      if(!dot) return;
+      dot.className='day-dot';
+      const days=getDays();
+      if(days[iso] && days[iso].length>0){
+        dot.classList.add(days[iso].every(t=>t.done)?'dot-done':'dot-has');
+      }
+    });
+  }
+
   function updateGoalStatus() {
-  const goal = getGoal();
-  const completedDays =
-    document.querySelectorAll("#monthDays .completed-day").length;
+    const goal = getGoal();
+    const days = getDays();
+    let completedCount = 0;
 
-  const remaining = goal - completedDays;
+    for (const date in days) {
+      if (days[date].length > 0 && days[date].every(t => t.done)) {
+        completedCount++;
+      }
+    }
+    document.getElementById("goalRemaining").textContent =
+      Math.max(goal - completedCount, 0);
+  }
 
-  document.getElementById("goalRemaining").textContent =
-    remaining >= 0 ? remaining : 0;
-}
+  backupBtn.onclick=()=>{
+    const blob=new Blob([JSON.stringify({days:getDays()},null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='gunluk-takip-yedek.json';
+    a.click();
+  };
+
+  restoreBtn.onclick=()=>{
+    const f=restoreInput.files[0];
+    if(!f) return alert('Dosya seç');
+    const r=new FileReader();
+    r.onload=e=>{
+      try{
+        const d=JSON.parse(e.target.result);
+        localStorage.setItem('days',JSON.stringify(d.days));
+        loadDay();
+        renderMonthDots();
+        updateGoalStatus();
+        alert('Yedek yüklendi');
+      }catch{
+        alert('Geçersiz dosya');
+      }
+    };
+    r.readAsText(f);
+  };
+
+  const now = new Date();
+  monthInput.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  monthInput.dispatchEvent(new Event('change'));
+});
 </script>
 
 </body>
