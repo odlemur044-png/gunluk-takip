@@ -146,12 +146,30 @@ button:active {
   font-size: 0.8rem;
   color: #555;
 }
+    .goal-box {
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f4f6f8;
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
   </style>
 </head>
 <body>
 
 <h1>📋 Günlük Takip Programı <small style="font-size:0.8rem;color:#4caf50;">(En İyi Sürüm)</small></h1>
 <div class="container">
+  <div id="goalBox" class="goal-box">
+  <label>
+    🎯 Hedef:
+    <input type="number" id="goalInput" min="1" style="width:80px;">
+    gün
+  </label>
+  <div>⏳ Kalan: <span id="goalRemaining">0</span> gün</div>
+</div>
   <label><strong>Ay / Yıl Seç:</strong></label>
   <input type="month" id="monthInput">
   <button id="toggleMulti" style="margin-top:6px;">➕ Birden Fazla Gün Seç</button>
@@ -188,7 +206,27 @@ button:active {
 </div>
 
 <script>
+  function getGoal() {
+  return Number(localStorage.getItem("goal")) || 0;
+}
+
+function setGoal(value) {
+  localStorage.setItem("goal", value);
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
+  const goalInput = document.getElementById("goalInput");
+
+// Önceden kaydedilmiş hedef varsa yaz
+goalInput.value = getGoal();
+
+// Kullanıcı sayı yazınca kaydet
+goalInput.addEventListener("change", () => {
+  if (goalInput.value > 0) {
+    setGoal(goalInput.value);
+    updateGoalStatus();
+  }
+});
 let currentDate = null;
 let selectedDays = [];
 let multiSelect = false;
@@ -261,7 +299,9 @@ for (let i = 0; i < firstDay; i++) {
       currentDate=iso;
       saveDays(days);
       loadDay();
-      
+      day.classList.toggle("completed-day");
+updateGoalStatus();
+
     };
 
     // BASILI TUTMA = günü temizle
@@ -498,9 +538,17 @@ function handleSwipe() {
       newYear--;
     }
   }
-
   monthInput.value = `${newYear}-${String(newMonth).padStart(2, "0")}`;
   monthInput.dispatchEvent(new Event("change"));
+  function updateGoalStatus() {
+  const goal = getGoal();
+  const completedDays = document.querySelectorAll(".completed-day").length;
+  const remaining = goal - completedDays;
+
+  document.getElementById("goalRemaining").textContent =
+    remaining >= 0 ? remaining : 0;
+    updateGoalStatus();
+}
 }
 </script>
 
