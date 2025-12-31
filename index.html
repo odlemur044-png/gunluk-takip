@@ -123,16 +123,39 @@ button:active {
 
     .delete-hold { background:#ffdddd !important; border-color:#ff5c5c !important; color:#a40000; }
   </style>
+  .weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+  font-weight: bold;
+  text-align: center;
+  color: #555;
+}
+
+.weekdays div {
+  padding: 6px 0;
+  font-size: 0.8rem;
+}
 </head>
 <body>
 
 <h1>📋 Günlük Takip Programı <small style="font-size:0.8rem;color:#4caf50;">(En İyi Sürüm)</small></h1>
 <div class="container">
-
   <label><strong>Ay / Yıl Seç:</strong></label>
   <input type="month" id="monthInput">
   <button id="toggleMulti" style="margin-top:6px;">➕ Birden Fazla Gün Seç</button>
   <button id="clearSelected" style="margin-top:6px;background:#ffdddd;border:1px solid #ff5c5c;">🧹 Seçilen Günleri Temizle</button>
+  <div id="weekDays" class="weekdays">
+  <div>Pt</div>
+  <div>Sl</div>
+  <div>Çr</div>
+  <div>Pr</div>
+  <div>Cm</div>
+  <div>Ct</div>
+  <div>Pz</div>
+</div>
+
   <div id="monthDays"></div>
 
   <hr>
@@ -182,7 +205,14 @@ monthInput.addEventListener('change', () => {
   if(!monthInput.value) return;
   const [y,m] = monthInput.value.split('-').map(Number);
   const count = new Date(y,m,0).getDate();
-
+// Ayın ilk gününün haftanın hangi günü olduğunu bul (Pzt = 0)
+let firstDay = new Date(y, m - 1, 1).getDay();
+firstDay = (firstDay + 6) % 7; // Pazartesi başlangıç
+  // Ayın başı için boş kutular
+for (let i = 0; i < firstDay; i++) {
+  const empty = document.createElement("div");
+  monthDays.appendChild(empty);
+}
   for(let d=1; d<=count; d++){
     const iso = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const btn = document.createElement('button');
