@@ -396,20 +396,26 @@ function loadDay(){
 }
 
 function renderMonthDots(){
-  function updateDayCounter(){
-  const days = getDays();
-  let done = 0;
-  let pending = 0;
+  [...monthDays.children].forEach(btn=>{
+    if (!btn.dataset || !btn.dataset.date) return;
 
-  Object.keys(days).forEach(date => {
-    const tasks = days[date];
-    if (!tasks || tasks.length === 0) return;
+    const iso = btn.dataset.date;
+    const dot = btn.querySelector('.day-dot');
+    if (!dot) return;
 
-    const allDone = tasks.every(t => t.done);
-    if (allDone) done++;
-    else pending++;
+    dot.className = 'day-dot';
+
+    const days = getDays();
+    if (days[iso] && days[iso].length > 0) {
+      dot.classList.add(
+        days[iso].every(t => t.done) ? 'dot-done' : 'dot-has'
+      );
+    }
   });
 
+  updateDayCounter();
+}
+  
   document.getElementById("doneCount").textContent = done;
   document.getElementById("pendingCount").textContent = pending;
 }
