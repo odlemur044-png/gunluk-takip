@@ -156,6 +156,16 @@ button:active {
   <input type="month" id="monthInput">
   <button id="toggleMulti" style="margin-top:6px;">➕ Birden Fazla Gün Seç</button>
   <button id="clearSelected" style="margin-top:6px;background:#ffdddd;border:1px solid #ff5c5c;">🧹 Seçilen Günleri Temizle</button>
+  <div id="dayCounter" style="
+  margin-top:10px;
+  display:flex;
+  gap:15px;
+  font-weight:bold;
+  font-size:0.9rem;
+">
+  <span style="color:#2e7d32;">🟢 Biten: <span id="doneCount">0</span> gün</span>
+  <span style="color:#f9a825;">🟡 Kalan: <span id="pendingCount">0</span> gün</span>
+</div>
   <div id="weekDays" class="weekdays">
   <div>Pt</div>
   <div>Sl</div>
@@ -386,6 +396,23 @@ function loadDay(){
 }
 
 function renderMonthDots(){
+  function updateDayCounter(){
+  const days = getDays();
+  let done = 0;
+  let pending = 0;
+
+  Object.keys(days).forEach(date => {
+    const tasks = days[date];
+    if (!tasks || tasks.length === 0) return;
+
+    const allDone = tasks.every(t => t.done);
+    if (allDone) done++;
+    else pending++;
+  });
+
+  document.getElementById("doneCount").textContent = done;
+  document.getElementById("pendingCount").textContent = pending;
+}
   [...monthDays.children].forEach(btn=>{
     const iso=btn.dataset.date;
     const dot=btn.querySelector('.day-dot');
@@ -395,6 +422,8 @@ function renderMonthDots(){
       dot.classList.add(days[iso].every(t=>t.done)?'dot-done':'dot-has');
     }
   });
+  
+  updateDayCounter();
 }
 
 addBtn.onclick=()=>{
