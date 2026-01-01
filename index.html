@@ -410,6 +410,7 @@ function renderMonthDots() {
     if (days[iso] && days[iso].length > 0) {
       dot.classList.add(
         days[iso].every(t => t.done) ? 'dot-done' : 'dot-has'
+        updateDayCounter();
       );
     }
   });
