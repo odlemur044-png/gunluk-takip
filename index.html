@@ -414,12 +414,26 @@ function renderMonthDots() {
     }
   });
 
-  updateDayCounter();
-}
+function updateDayCounter() {
+  const doneEl = document.getElementById("doneCount");
+  const pendingEl = document.getElementById("pendingCount");
 
-  updateDayCounter();
+  if (!doneEl || !pendingEl) return;
+
+  let done = 0;
+  let pending = 0;
+
+  const dots = document.querySelectorAll("#monthDays .day-dot");
+
+  dots.forEach(dot => {
+    if (dot.classList.contains("dot-done")) done++;
+    else if (dot.classList.contains("dot-has")) pending++;
+  });
+
+  doneEl.textContent = done;
+  pendingEl.textContent = pending;
+
 }
-  
   document.getElementById("doneCount").textContent = done;
   document.getElementById("pendingCount").textContent = pending;
 }
