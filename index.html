@@ -215,7 +215,10 @@ const restoreInput = document.getElementById('restoreInput');
 const clearSelectedBtn = document.getElementById('clearSelected');
 
 function getDays(){ return JSON.parse(localStorage.getItem('days')) || {}; }
-function saveDays(d){ localStorage.setItem('days', JSON.stringify(d)); }
+function saveDays(d){localStorage.setItem('days', JSON.stringify(d));
+  updateDayCounter(); // 🔴 KRİTİK SATIR
+}
+
 
 monthInput.addEventListener('change', () => {
   monthDays.innerHTML = '';
@@ -422,16 +425,28 @@ function updateDayCounter() {
   const pendingEl = document.getElementById("pendingCount");
   if (!doneEl || !pendingEl) return;
 
-  const days = getDays();
+  const raw = localStorage.getItem("days");
+  if (!raw) {
+    doneEl.textContent = 0;
+    pendingEl.textContent = 0;
+    return;
+  }
+
+  const days = JSON.parse(raw);
   let done = 0;
   let pending = 0;
 
-  Object.values(days).forEach(tasks => {
-    if (!tasks || tasks.length === 0) return;
+  for (const date in days) {
+    const tasks = days[date];
+    if (!Array.isArray(tasks) || tasks.length === 0) continue;
 
-    if (tasks.every(t => t.done)) done++;
+    if (tasks.every(t => t.done === true)) done++;
     else pending++;
-  });
+  }
+ });
+  doneEl.textContent = done;
+  pendingEl.textContent = pending;
+}
 
   doneEl.textContent = done;
   pendingEl.textContent = pending;
