@@ -395,23 +395,27 @@ function loadDay(){
   }
 }
 
-function renderMonthDots(){
-  [...monthDays.children].forEach(btn=>{
-    if (!btn.dataset || !btn.dataset.date) return;
+function renderMonthDots() {
+  const days = getDays();
 
+  const buttons = document.querySelectorAll('#monthDays button[data-date]');
+
+  buttons.forEach(btn => {
     const iso = btn.dataset.date;
     const dot = btn.querySelector('.day-dot');
     if (!dot) return;
 
     dot.className = 'day-dot';
 
-    const days = getDays();
     if (days[iso] && days[iso].length > 0) {
       dot.classList.add(
         days[iso].every(t => t.done) ? 'dot-done' : 'dot-has'
       );
     }
   });
+
+  updateDayCounter();
+}
 
   updateDayCounter();
 }
