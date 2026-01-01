@@ -332,6 +332,7 @@ clearSelectedBtn.onclick = () => {
   renderMonthDots();
   [...monthDays.children].forEach(b=>b.classList.remove('active'));
   setTimeout(updateDayCounter, 0);
+  
 };
 
 function loadDay(){
@@ -419,18 +420,18 @@ function renderMonthDots() {
 function updateDayCounter() {
   const doneEl = document.getElementById("doneCount");
   const pendingEl = document.getElementById("pendingCount");
-
   if (!doneEl || !pendingEl) return;
 
+  const days = getDays();
   let done = 0;
   let pending = 0;
 
-  document
-    .querySelectorAll("#monthDays .day-dot")
-    .forEach(dot => {
-      if (dot.classList.contains("dot-done")) done++;
-      else if (dot.classList.contains("dot-has")) pending++;
-    });
+  Object.values(days).forEach(tasks => {
+    if (!tasks || tasks.length === 0) return;
+
+    if (tasks.every(t => t.done)) done++;
+    else pending++;
+  });
 
   doneEl.textContent = done;
   pendingEl.textContent = pending;
@@ -461,8 +462,10 @@ addBtn.onclick=()=>{
   saveDays(days);
   taskInput.value='';
   loadDay();
-  
+  updateDayCounter();
+
   renderMonthDots();
+  updateDayCounter();
 };
 
 function loadDaysList(){
