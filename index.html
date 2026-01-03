@@ -43,6 +43,7 @@
         .day-dot { width: 6px; height: 6px; border-radius: 50%; margin: 4px auto 0; background: #ccc; }
         .dot-has { background: #ffd54f; }
         .dot-done { background: #81c784; }
+        .dot-late { background: #ff5252; border-color: #d32f2f; box-shadow: 0 0 5px rgba(255, 82, 82, 0.5); }
 
         /* Arayüz Elemanları */
         .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
@@ -52,6 +53,7 @@
         
         @keyframes shake { 0% {transform: rotate(1deg)} 50% {transform: rotate(-1deg)} 100% {transform: rotate(1deg)} }
         hr { border: 0; border-top: 1px solid var(--border-color); margin: 20px 0; }
+        
     </style>
 </head>
 <body>
@@ -251,16 +253,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderMonthDots() {
-        const daysData = getDays();
-        document.querySelectorAll('#monthDays button[data-date]').forEach(btn => {
-            const iso = btn.dataset.date;
-            const dot = btn.querySelector('.day-dot');
-            if(!dot) return;
-            dot.className = 'day-dot';
-            if (daysData[iso] && daysData[iso].length > 0) {
-                dot.classList.add(daysData[iso].every(t => t.done) ? 'dot-done' : 'dot-has');
+    const daysData = getDays();
+    const todayStr = new Date().toISOString().split('T')[0]; // Bugünün tarihi (YYYY-MM-DD)
+    
+    document.querySelectorAll('#monthDays button[data-date]').forEach(btn => {
+        const iso = btn.dataset.date;
+        const dot = btn.querySelector('.day-dot');
+        if(!dot) return;
+
+        // Önce sınıfları temizle
+        dot.className = 'day-dot';
+
+        if (daysData[iso] && daysData[iso].length > 0) {
+            const allDone = daysData[iso].every(t => t.done);
+
+            if (allDone) {
+                // Görevlerin tamamı bitmişse her zaman YEŞİL
+                dot.classList.add('dot-done');
+            } else {
+                // Tamamlanmamış görev var, tarihe bakalım:
+                if (iso < todayStr) {
+                    // Tarih bugünden eski ise KIRMIZI
+                    dot.classList.add('dot-late');
+                } else {
+                    // Tarih bugün veya gelecekse SARI
+                    dot.classList.add('dot-has');
+                }
             }
-        });
+        }
+    });
+}
     }
 
     // Görev Ekleme
