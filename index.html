@@ -20,7 +20,6 @@
         body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg-color); color: var(--text-color); padding: 20px; transition: 0.3s; }
         .container { max-width: 900px; margin: auto; background: var(--container-bg); padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         
-        /* Takvim ve Grid */
         .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 15px; font-weight: bold; text-align: center; }
         #monthDays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 10px; }
         #monthDays button { 
@@ -30,7 +29,6 @@
         #monthDays button.active { background: #c8e6c9; border-color: #66bb6a; color: #1b5e20; }
         #monthDays button.today { outline: 2px solid #4caf50; }
         
-        /* Görev Kartları */
         .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-top: 20px; }
         .task-card { 
             border: 1px solid var(--border-color); border-radius: 12px; padding: 15px; 
@@ -39,13 +37,11 @@
         .task-card.completed { background: #e8f5e9; border-color: #66bb6a; text-decoration: line-through; color: #777; }
         .task-card.delete-hold { background: #ffebee !important; border-color: #e53935 !important; animation: shake 0.2s infinite; }
 
-        /* Noktalar */
         .day-dot { width: 6px; height: 6px; border-radius: 50%; margin: 4px auto 0; background: #ccc; }
         .dot-has { background: #ffd54f; }
         .dot-done { background: #81c784; }
         .dot-late { background: #ff5252; border-color: #d32f2f; box-shadow: 0 0 5px rgba(255, 82, 82, 0.5); }
 
-        /* Arayüz Elemanları */
         .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
         input, button { padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--container-bg); color: var(--text-color); }
         button:hover { opacity: 0.8; }
@@ -53,7 +49,6 @@
         
         @keyframes shake { 0% {transform: rotate(1deg)} 50% {transform: rotate(-1deg)} 100% {transform: rotate(1deg)} }
         hr { border: 0; border-top: 1px solid var(--border-color); margin: 20px 0; }
-        
     </style>
 </head>
 <body>
@@ -112,7 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const addBtn = document.getElementById('addBtn');
     const toggleMultiBtn = document.getElementById('toggleMulti');
 
-    // Veri Fonksiyonları
     const getDays = () => JSON.parse(localStorage.getItem('days')) || {};
     const saveDays = (d) => {
         localStorage.setItem('days', JSON.stringify(d));
@@ -120,7 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMonthDots();
     };
 
-    // Takvim Çizimi
     function renderCalendar() {
         monthDays.innerHTML = '';
         if (!monthInput.value) return;
@@ -128,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const [y, m] = monthInput.value.split('-').map(Number);
         const firstDay = (new Date(y, m - 1, 1).getDay() + 6) % 7;
         const daysInMonth = new Date(y, m, 0).getDate();
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD formatı için
 
         for (let i = 0; i < firstDay; i++) monthDays.appendChild(document.createElement('div'));
 
@@ -158,7 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadTasks();
             };
 
-            // Gün silme (Basılı tutma)
             let timer;
             btn.onmousedown = btn.ontouchstart = () => {
                 timer = setTimeout(() => {
@@ -177,7 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMonthDots();
     }
 
-    // Görevleri Yükle
     function loadTasks() {
         taskGrid.innerHTML = '';
         if (!currentDate) return;
@@ -214,7 +205,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Çoklu Seçim
     toggleMultiBtn.onclick = () => {
         multiSelect = !multiSelect;
         toggleMultiBtn.textContent = multiSelect ? "✅ Çoklu Seçim: Açık" : "➕ Çoklu Seçim: Kapalı";
@@ -224,7 +214,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Seçili Günleri Temizle
     document.getElementById('clearSelected').onclick = () => {
         if(selectedDays.length === 0) return alert("Seçili gün yok.");
         if(confirm("Seçili günlerdeki TÜM görevler silinecek. Onaylıyor musunuz?")) {
@@ -238,7 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Sayaçlar ve Noktalar
     function updateDayCounter() {
         const days = getDays();
         let done = 0, pending = 0;
@@ -253,39 +241,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderMonthDots() {
-    const daysData = getDays();
-    const todayStr = new Date().toISOString().split('T')[0]; // Bugünün tarihi (YYYY-MM-DD)
-    
-    document.querySelectorAll('#monthDays button[data-date]').forEach(btn => {
-        const iso = btn.dataset.date;
-        const dot = btn.querySelector('.day-dot');
-        if(!dot) return;
+        const daysData = getDays();
+        const todayStr = new Date().toLocaleDateString('sv-SE');
+        
+        document.querySelectorAll('#monthDays button[data-date]').forEach(btn => {
+            const iso = btn.dataset.date;
+            const dot = btn.querySelector('.day-dot');
+            if(!dot) return;
 
-        // Önce sınıfları temizle
-        dot.className = 'day-dot';
+            dot.className = 'day-dot';
 
-        if (daysData[iso] && daysData[iso].length > 0) {
-            const allDone = daysData[iso].every(t => t.done);
-
-            if (allDone) {
-                // Görevlerin tamamı bitmişse her zaman YEŞİL
-                dot.classList.add('dot-done');
-            } else {
-                // Tamamlanmamış görev var, tarihe bakalım:
-                if (iso < todayStr) {
-                    // Tarih bugünden eski ise KIRMIZI
-                    dot.classList.add('dot-late');
+            if (daysData[iso] && daysData[iso].length > 0) {
+                const allDone = daysData[iso].every(t => t.done);
+                if (allDone) {
+                    dot.classList.add('dot-done'); // Yeşil
                 } else {
-                    // Tarih bugün veya gelecekse SARI
-                    dot.classList.add('dot-has');
+                    if (iso < todayStr) {
+                        dot.classList.add('dot-late'); // Kırmızı
+                    } else {
+                        dot.classList.add('dot-has');  // Sarı
+                    }
                 }
             }
-        }
-    });
-}
+        });
     }
 
-    // Görev Ekleme
     addBtn.onclick = () => {
         const val = taskInput.value.trim();
         if (!val || selectedDays.length === 0) return alert('Gün seçin ve görev yazın');
@@ -299,7 +279,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loadTasks();
     };
 
-    // Yedekleme ve Geri Yükleme
     document.getElementById('backupBtn').onclick = () => {
         const dataStr = JSON.stringify({days: getDays()});
         const blob = new Blob([dataStr], {type: "application/json"});
@@ -327,7 +306,6 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.readAsText(file);
     };
 
-    // Tema Yönetimi
     const dt = document.getElementById('darkToggle');
     dt.onclick = () => {
         document.body.classList.toggle('dark');
@@ -340,14 +318,6 @@ document.addEventListener('DOMContentLoaded', () => {
         dt.textContent = "☀️";
     }
 
-    // Başlangıç
-    const now = new Date();
-    monthInput.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-    renderCalendar();
-    updateDayCounter();
-    monthInput.onchange = renderCalendar;
-    // --- AY DEĞİŞTİRME ÖZELLİKLERİ (Swipe & Wheel) ---
-
     const changeMonth = (direction) => {
         const [year, month] = monthInput.value.split("-").map(Number);
         let date = new Date(year, month - 1 + direction, 1);
@@ -355,23 +325,25 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCalendar();
     };
 
-    // 1. Mobil için Kaydırma (Swipe) Desteği
     let touchStartX = 0;
     monthDays.addEventListener("touchstart", e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
     monthDays.addEventListener("touchend", e => {
         let touchEndX = e.changedTouches[0].screenX;
         let diff = touchEndX - touchStartX;
-        if (Math.abs(diff) > 50) { // 50px'den fazla kaydırılmışsa
-            changeMonth(diff > 0 ? -1 : 1); // Sağa kaydırınca geri, sola kaydırınca ileri
-        }
+        if (Math.abs(diff) > 50) changeMonth(diff > 0 ? -1 : 1);
     }, {passive: true});
 
-    // 2. Masaüstü için Mouse Tekerleği Desteği
     monthDays.addEventListener("wheel", e => {
-        if (e.deltaY > 0) changeMonth(1);  // Aşağı kaydırınca sonraki ay
-        else changeMonth(-1);             // Yukarı kaydırınca önceki ay
+        if (e.deltaY > 0) changeMonth(1);
+        else changeMonth(-1);
         e.preventDefault(); 
     }, {passive: false});
+
+    const now = new Date();
+    monthInput.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    renderCalendar();
+    updateDayCounter();
+    monthInput.onchange = renderCalendar;
 });
 </script>
 </body>
