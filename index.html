@@ -1,1 +1,322 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Günlük Takip Programı (Hızlı Seçim)</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f8;
+            --container-bg: #ffffff;
+            --text-color: #333;
+            --border-color: #ddd;
+        }
+        body.dark {
+            --bg-color: #121212;
+            --container-bg: #1e1e1e;
+            --text-color: #eaeaea;
+            --border-color: #333;
+        }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg-color); color: var(--text-color); padding: 20px; transition: 0.3s; user-select: none; }
+        .container { max-width: 900px; margin: auto; background: var(--container-bg); padding: 20px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        
+        .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 15px; font-weight: bold; text-align: center; }
+        #monthDays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 10px; touch-action: none; }
+        #monthDays button { 
+            position: relative; border: 1px solid var(--border-color); border-radius: 10px; 
+            background: var(--container-bg); color: var(--text-color); padding: 10px 0; cursor: pointer; transition: 0.2s;
+            pointer-events: auto;
+        }
+        #monthDays button.active { background: #c8e6c9 !important; border-color: #66bb6a; color: #1b5e20; }
+        #monthDays button.today { outline: 2px solid #4caf50; }
+        
+        .task-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-top: 20px; }
+        .task-card { 
+            border: 1px solid var(--border-color); border-radius: 12px; padding: 15px; 
+            background: var(--container-bg); cursor: pointer; position: relative; word-break: break-word;
+        }
+        .task-card.completed { background: #e8f5e9; border-color: #66bb6a; text-decoration: line-through; color: #777; }
+        .task-card.delete-hold { background: #ffebee !important; border-color: #e53935 !important; animation: shake 0.2s infinite; }
 
+        .day-dot { width: 6px; height: 6px; border-radius: 50%; margin: 4px auto 0; background: #ccc; pointer-events: none; }
+        .dot-has { background: #ffd54f; }
+        .dot-done { background: #81c784; }
+        .dot-late { background: #ff5252; border-color: #d32f2f; box-shadow: 0 0 5px rgba(255, 82, 82, 0.5); }
+
+        .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
+        input, button { padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--container-bg); color: var(--text-color); }
+        button:hover { opacity: 0.8; }
+        #darkToggle { font-size: 1.2rem; cursor: pointer; margin-left: auto; }
+        
+        @keyframes shake { 0% {transform: rotate(1deg)} 50% {transform: rotate(-1deg)} 100% {transform: rotate(1deg)} }
+        hr { border: 0; border-top: 1px solid var(--border-color); margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="controls">
+        <input type="month" id="monthInput">
+        <button id="toggleMulti">➕ Çoklu Seçim: Kapalı</button>
+        <button id="clearSelected" style="background:#ffebee; color:#c62828;">🧹 Seçili Günleri Sil</button>
+        <div id="darkToggle">🌙</div>
+    </div>
+
+    <div id="dayCounter">
+        <strong>Durum:</strong> 
+        <span style="color:#2e7d32;">🟢 Tamam: <span id="doneCount">0</span></span> | 
+        <span style="color:#f9a825;">🟡 Bekleyen: <span id="pendingCount">0</span></span>
+    </div>
+
+    <div class="weekdays">
+        <div>Pt</div><div>Sl</div><div>Çr</div><div>Pr</div><div>Cm</div><div>Ct</div><div>Pz</div>
+    </div>
+    <div id="monthDays"></div>
+
+    <hr>
+    
+    <div class="controls">
+        <input type="text" id="taskInput" placeholder="Yeni görev yaz..." style="flex-grow:1">
+        <button id="addBtn" style="background:#4caf50; color:white;">➕ Ekle</button>
+    </div>
+    
+    <div id="taskGrid" class="task-grid"></div>
+
+    <hr>
+
+    <details>
+        <summary style="cursor:pointer; font-weight:bold;">💾 Veri Yönetimi</summary>
+        <div style="padding:15px; border:1px dashed #ccc; margin-top:10px; border-radius:8px;">
+            <button id="backupBtn">📤 Yedek Al</button>
+            <input type="file" id="restoreInput" accept=".json" style="margin-top:10px;">
+            <button id="restoreBtn">📥 Geri Yükle</button>
+        </div>
+    </details>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    let currentDate = null;
+    let selectedDays = [];
+    let multiSelect = false;
+    let isDragging = false; // Kaydırarak seçim için
+
+    const monthInput = document.getElementById('monthInput');
+    const monthDays = document.getElementById('monthDays');
+    const taskGrid = document.getElementById('taskGrid');
+    const taskInput = document.getElementById('taskInput');
+    const addBtn = document.getElementById('addBtn');
+    const toggleMultiBtn = document.getElementById('toggleMulti');
+
+    const getDays = () => JSON.parse(localStorage.getItem('days')) || {};
+    const saveDays = (d) => {
+        localStorage.setItem('days', JSON.stringify(d));
+        updateDayCounter();
+        renderMonthDots();
+    };
+
+    function renderCalendar() {
+        monthDays.innerHTML = '';
+        if (!monthInput.value) return;
+        
+        const [y, m] = monthInput.value.split('-').map(Number);
+        const firstDay = (new Date(y, m - 1, 1).getDay() + 6) % 7;
+        const daysInMonth = new Date(y, m, 0).getDate();
+        const todayStr = new Date().toLocaleDateString('sv-SE');
+
+        for (let i = 0; i < firstDay; i++) monthDays.appendChild(document.createElement('div'));
+
+        for (let d = 1; d <= daysInMonth; d++) {
+            const iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const btn = document.createElement('button');
+            btn.textContent = d;
+            btn.dataset.date = iso;
+            if(iso === todayStr) btn.classList.add('today');
+            if(selectedDays.includes(iso)) btn.classList.add('active');
+
+            const dot = document.createElement('div');
+            dot.className = 'day-dot';
+            btn.appendChild(dot);
+
+            // Sürükleyerek seçim ve Tıklama yönetimi
+            const handleInteraction = (e) => {
+                if(multiSelect && (isDragging || e.type === 'click' || e.type === 'touchstart')) {
+                    if (!selectedDays.includes(iso)) {
+                        selectedDays.push(iso);
+                        btn.classList.add('active');
+                    }
+                } else if(!multiSelect && (e.type === 'click' || e.type === 'touchstart')) {
+                    selectedDays = [iso];
+                    document.querySelectorAll('#monthDays button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                }
+                currentDate = iso;
+                loadTasks();
+            };
+
+            btn.addEventListener('mousedown', () => { if(multiSelect) isDragging = true; });
+            btn.addEventListener('mouseenter', (e) => { if(isDragging) handleInteraction(e); });
+            btn.addEventListener('click', handleInteraction);
+
+            // Uzun basma silme
+            let timer;
+            btn.onmousedown = (e) => {
+                if(multiSelect) isDragging = true;
+                timer = setTimeout(() => {
+                    if(!isDragging && confirm(`${iso} silinsin mi?`)) {
+                        const days = getDays(); delete days[iso]; saveDays(days); loadTasks();
+                    }
+                }, 800);
+            };
+            btn.onmouseup = () => { isDragging = false; clearTimeout(timer); };
+
+            monthDays.appendChild(btn);
+        }
+        renderMonthDots();
+    }
+
+    // Dokunmatik Sürükleme (Mobilde boyama gibi seçim)
+    monthDays.addEventListener('touchmove', (e) => {
+        if (!multiSelect) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (target && target.tagName === 'BUTTON' && target.dataset.date) {
+            const iso = target.dataset.date;
+            if (!selectedDays.includes(iso)) {
+                selectedDays.push(iso);
+                target.classList.add('active');
+                currentDate = iso;
+                loadTasks();
+            }
+        }
+    }, { passive: false });
+
+    window.addEventListener('mouseup', () => isDragging = false);
+
+    function loadTasks() {
+        taskGrid.innerHTML = '';
+        if (!currentDate) return;
+        const tasks = getDays()[currentDate] || [];
+        tasks.forEach((task, index) => {
+            const card = document.createElement('div');
+            card.className = `task-card ${task.done ? 'completed' : ''}`;
+            card.textContent = task.text;
+            card.onclick = () => {
+                const days = getDays(); days[currentDate][index].done = !days[currentDate][index].done;
+                saveDays(days); loadTasks();
+            };
+            let t;
+            card.onmousedown = card.ontouchstart = () => {
+                card.classList.add('delete-hold');
+                t = setTimeout(() => {
+                    const days = getDays(); days[currentDate].splice(index, 1);
+                    saveDays(days); loadTasks();
+                }, 800);
+            };
+            card.onmouseup = card.ontouchend = () => { clearTimeout(t); card.classList.remove('delete-hold'); };
+            taskGrid.appendChild(card);
+        });
+    }
+
+    toggleMultiBtn.onclick = () => {
+        multiSelect = !multiSelect;
+        toggleMultiBtn.textContent = multiSelect ? "✅ Çoklu Seçim: Açık" : "➕ Çoklu Seçim: Kapalı";
+        if(!multiSelect) { selectedDays = currentDate ? [currentDate] : []; renderCalendar(); }
+    };
+
+    document.getElementById('clearSelected').onclick = () => {
+        if(selectedDays.length === 0) return alert("Seçili gün yok.");
+        if(confirm("Seçili günlerdeki TÜM görevler silinecek?")) {
+            const days = getDays(); selectedDays.forEach(d => delete days[d]);
+            saveDays(days); selectedDays = []; currentDate = null; renderCalendar(); loadTasks();
+        }
+    };
+
+    function updateDayCounter() {
+        const days = getDays(); let done = 0, pending = 0;
+        for (const date in days) {
+            if (days[date].length > 0) {
+                if (days[date].every(t => t.done)) done++; else pending++;
+            }
+        }
+        document.getElementById('doneCount').textContent = done;
+        document.getElementById('pendingCount').textContent = pending;
+    }
+
+    function renderMonthDots() {
+        const daysData = getDays(); const todayStr = new Date().toLocaleDateString('sv-SE');
+        document.querySelectorAll('#monthDays button[data-date]').forEach(btn => {
+            const iso = btn.dataset.date; const dot = btn.querySelector('.day-dot'); if(!dot) return;
+            dot.className = 'day-dot';
+            if (daysData[iso] && daysData[iso].length > 0) {
+                if (daysData[iso].every(t => t.done)) dot.classList.add('dot-done');
+                else if (iso < todayStr) dot.classList.add('dot-late');
+                else dot.classList.add('dot-has');
+            }
+        });
+    }
+
+    addBtn.onclick = () => {
+        const val = taskInput.value.trim();
+        if (!val || selectedDays.length === 0) return alert('Gün seçin ve görev yazın');
+        const days = getDays();
+        selectedDays.forEach(d => { if (!days[d]) days[d] = []; days[d].push({ text: val, done: false }); });
+        saveDays(days); taskInput.value = ''; loadTasks();
+    };
+
+    // Ay Değiştirme ve Swipe
+    const changeMonth = (dir) => {
+        if(multiSelect) return; // Çoklu seçimdeyken swipe'ı engelle
+        const [y, m] = monthInput.value.split("-").map(Number);
+        let date = new Date(y, m - 1 + dir, 1);
+        monthInput.value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        renderCalendar();
+    };
+
+    let touchStartX = 0;
+    monthDays.addEventListener("touchstart", e => { if(!multiSelect) touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+    monthDays.addEventListener("touchend", e => {
+        if(multiSelect) return;
+        let diff = e.changedTouches[0].screenX - touchStartX;
+        if (Math.abs(diff) > 60) changeMonth(diff > 0 ? -1 : 1);
+    }, {passive: true});
+
+    monthDays.addEventListener("wheel", e => { if(!multiSelect) { changeMonth(e.deltaY > 0 ? 1 : -1); e.preventDefault(); } }, {passive: false});
+
+    // Başlangıç
+    const now = new Date();
+    monthInput.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    renderCalendar(); updateDayCounter();
+    monthInput.onchange = renderCalendar;
+
+    // Dark Mode
+    const dt = document.getElementById('darkToggle');
+    dt.onclick = () => {
+        document.body.classList.toggle('dark');
+        const isDark = document.body.classList.contains('dark');
+        dt.textContent = isDark ? "☀️" : "🌙";
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    };
+    if(localStorage.getItem('theme') === 'dark') { document.body.classList.add('dark'); dt.textContent = "☀️"; }
+    
+    // Yedekleme
+    document.getElementById('backupBtn').onclick = () => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([JSON.stringify({days: getDays()})], {type: "application/json"}));
+        a.download = `takip-yedek.json`; a.click();
+    };
+    document.getElementById('restoreBtn').onclick = () => {
+        const file = document.getElementById('restoreInput').files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => { 
+            const data = JSON.parse(e.target.result); 
+            if(data.days) { saveDays(data.days); renderCalendar(); alert("Yüklendi"); }
+        };
+        reader.readAsText(file);
+    };
+});
+</script>
+</body>
+</html>
