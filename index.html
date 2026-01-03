@@ -324,6 +324,32 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCalendar();
     updateDayCounter();
     monthInput.onchange = renderCalendar;
+    // --- AY DEĞİŞTİRME ÖZELLİKLERİ (Swipe & Wheel) ---
+
+    const changeMonth = (direction) => {
+        const [year, month] = monthInput.value.split("-").map(Number);
+        let date = new Date(year, month - 1 + direction, 1);
+        monthInput.value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        renderCalendar();
+    };
+
+    // 1. Mobil için Kaydırma (Swipe) Desteği
+    let touchStartX = 0;
+    monthDays.addEventListener("touchstart", e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+    monthDays.addEventListener("touchend", e => {
+        let touchEndX = e.changedTouches[0].screenX;
+        let diff = touchEndX - touchStartX;
+        if (Math.abs(diff) > 50) { // 50px'den fazla kaydırılmışsa
+            changeMonth(diff > 0 ? -1 : 1); // Sağa kaydırınca geri, sola kaydırınca ileri
+        }
+    }, {passive: true});
+
+    // 2. Masaüstü için Mouse Tekerleği Desteği
+    monthDays.addEventListener("wheel", e => {
+        if (e.deltaY > 0) changeMonth(1);  // Aşağı kaydırınca sonraki ay
+        else changeMonth(-1);             // Yukarı kaydırınca önceki ay
+        e.preventDefault(); 
+    }, {passive: false});
 });
 </script>
 </body>
